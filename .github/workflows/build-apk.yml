@@ -1,0 +1,50 @@
+name: Build Elvin Factor APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ElvinFactor_Source.zip"
+      - ".github/workflows/build-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check source ZIP exists
+        run: test -f ElvinFactor_Source.zip
+
+      - name: Extract project ZIP
+        run: |
+          mkdir -p source
+          unzip -q ElvinFactor_Source.zip -d source
+          test -f source/settings.gradle.kts
+          test -f source/app/build.gradle.kts
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build debug APK
+        run: gradle -p source assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ElvinFactor-debug-apk
+          path: source/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
